@@ -26,7 +26,7 @@ function updateObjects( timestep: number ) {
     const tempTransform = new Ammo.btTransform();
     for ( let i = 0, il = WORLD.rigidBodies.length; i < il; i ++ ) {
         const objThree = WORLD.rigidBodies[ i ];
-        const objPhys = objThree.userData.physicsBody;
+        const objPhys = objThree.userData.physicsBody as LIBAMMO.default.btRigidBody;
         const ms = objPhys.getMotionState();
         if ( ms ) {
             ms.getWorldTransform( tempTransform );
@@ -36,6 +36,7 @@ function updateObjects( timestep: number ) {
             objThree.quaternion.set( q.x(), q.y(), q.z(), q.w() );
         }
     }
+    Ammo.destroy(tempTransform);
 }
 
 function frameUpdate() {
@@ -68,6 +69,7 @@ function inititalize() {
     Ammo = PHYS.Ammo;
     WINDOW.initWindow(lookDir);
     WORLD.createWorld();
+    PLAYER.init();
     renderer.setAnimationLoop( frameUpdate );
 }
 

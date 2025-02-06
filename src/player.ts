@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import * as LIBAMMO from 'ammojs3'
 
 import * as PHYS from './physics.js'
 import * as WINDOW from './window.js'
@@ -10,6 +11,14 @@ const jumpClock = new THREE.Clock();
 function flatten(dir: THREE.Vector3, up: THREE.Vector3) {
 	let side = new THREE.Vector3().copy(dir).cross(up);
 	return new THREE.Vector3().copy(up).cross(side);
+}
+
+let jumpVec: LIBAMMO.default.btVector3;
+let moveVec: LIBAMMO.default.btVector3;
+
+export function init() {
+    jumpVec = new PHYS.Ammo.btVector3( 0, 50.1, 0);
+    moveVec = new PHYS.Ammo.btVector3( 0, 0, 0);
 }
 
 export function update(lookDir: THREE.Vector3, timestep: number) {
@@ -41,15 +50,16 @@ export function update(lookDir: THREE.Vector3, timestep: number) {
         }
 
         vec.normalize().multiplyScalar(speedMult);
+        moveVec.setValue(vec.x, vec.y, vec.z );
 
-        WORLD.player.applyCentralImpulse(new PHYS.Ammo.btVector3( vec.x, vec.y, vec.z ));
+        WORLD.player.applyCentralImpulse(moveVec);
     }
-    let playerPosz = WORLD.player.getWorldTransform().getOrigin();
-    let playerPos = new PHYS.Ammo.btVector3(playerPosz.x(), playerPosz.y(), playerPosz.z());
-    canJump = jumpClock.getElapsedTime() > .35 &&
-        PHYS.castPhysicsRay(playerPos, new PHYS.Ammo.btVector3(playerPos.x(), playerPos.y() - .7, playerPos.z()));
+    let playerPos = WORLD.player.getWorldTransform().getOrigin();
+    let playerJumpTestPoint = new PHYS.Ammo.btVector3(playerPos.x(), playerPos.y() - .7, playerPos.z());
+    canJump = jumpClock.getElapsedTime() > .35 && PHYS.castPhysicsRay(playerPos, playerJumpTestPoint);
+    PHYS.Ammo.destroy(playerJumpTestPoint);
     if (canJump && WINDOW.keys[" "]) {
-        WORLD.player.applyCentralImpulse(new PHYS.Ammo.btVector3( 0, 50.1, 0 ));
+        WORLD.player.applyCentralImpulse(jumpVec);
         jumpClock.start();
     }
 }

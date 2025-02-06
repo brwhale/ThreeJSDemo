@@ -47,6 +47,16 @@ function createRigidBody(threeObject : THREE.Object3D, physicsShape : LIBAMMO.de
     physicsWorld.addRigidBody( body );
 }
 
+function handleCollisonWithPlayer(object: THREE.Object3D) {
+    if ((object.userData.collisionCooldown as THREE.Clock).getDelta() > .3) {
+        let child = object as THREE.Mesh;
+        let mat = child.material as THREE.MeshPhongMaterial
+        if (mat) {
+            mat.color = mat.color.addScalar(-.2);
+        }
+    }
+}
+
 function detectCollision(){
 	let dispatcher = physicsWorld.getDispatcher();
 	let numManifolds = dispatcher.getNumManifolds();
@@ -57,36 +67,37 @@ function detectCollision(){
         const rb0 = (Ammo as any).castObject( contactManifold.getBody0(), Ammo.btRigidBody ) as LIBAMMO.default.btRigidBody;
         const rb1 = (Ammo as any).castObject( contactManifold.getBody1(), Ammo.btRigidBody ) as LIBAMMO.default.btRigidBody;
 
+        let closestDistance = 10000000.0;
+        let highestForce = 0;
+
 		for ( let j = 0; j < numContacts; j++ ) {
 			let contactPoint = contactManifold.getContactPoint( j );
 			let distance = contactPoint.getDistance();
             let force = contactPoint.getAppliedImpulse();
-            if (distance < 0.01 && force > 0.01 && (rb0.getMass() > 0 && rb1.getMass() > 0)) {
-                let obj1 = (rb0 as any).threeObject as THREE.Object3D;
-                let obj2 = (rb1 as any).threeObject as THREE.Object3D;
-                if (obj1 === WORLD.playerMesh || obj2 === WORLD.playerMesh) {
-			        console.log({distance: distance, force: force, obj1:obj1, obj2:obj2});
-                    let otherObj = obj1 === WORLD.playerMesh ? obj2 : obj1;
-                    if ((otherObj.userData.collisionCooldown as THREE.Clock).getDelta() > .3) {
-                        let child = otherObj as THREE.Mesh;
-                        let mat = child.material as THREE.MeshPhongMaterial
-                        if (mat) {
-                            mat.color = mat.color.addScalar(-.2);
-                        }
-                    }
-                }
-            }
+            closestDistance = Math.min(distance,closestDistance);
+            highestForce = Math.max(force, highestForce);
 		}
+
+        if (closestDistance < 0.1 && highestForce > 0.01 && (rb0.getMass() > 0 && rb1.getMass() > 0)) {
+            let obj1 = (rb0 as any).threeObject as THREE.Object3D;
+            let obj2 = (rb1 as any).threeObject as THREE.Object3D;
+            if (obj1 === WORLD.playerMesh || obj2 === WORLD.playerMesh) {
+                //console.log({distance: distance, force: force, obj1:obj1, obj2:obj2});
+                let otherObj = obj1 === WORLD.playerMesh ? obj2 : obj1;
+                handleCollisonWithPlayer(otherObj);
+            }
+        }
 	}
 }
 
-export function castPhysicsRay(origin: LIBAMMO.default.btVector3, dest: LIBAMMO.default.btVector3) {
-    let rayCallBack = new Ammo.ClosestRayResultCallback(new Ammo.btVector3(origin.x(), origin.y(), origin.z()),
-         new Ammo.btVector3(dest.x(), dest.y(), dest.z()));
+export function castPhysicsRay(origin: LIBAMMO.default.btVector3, dest: LIBAMMO.default.btVector3) :boolean {
+    let rayCallBack = new Ammo.ClosestRayResultCallback(origin, dest);
     
     physicsWorld.rayTest( rayCallBack.get_m_rayFromWorld(), rayCallBack.get_m_rayToWorld(), rayCallBack );
 
-    return rayCallBack.hasHit();
+    let result = rayCallBack.hasHit();
+    Ammo.destroy(rayCallBack);
+    return result
 }
 
 export function makeBox(position: THREE.Vector3, size: THREE.Vector3, mass: number, color: THREE.ColorRepresentation | undefined) {
