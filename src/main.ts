@@ -55,7 +55,9 @@ function frameUpdate() {
     }
     
     // follow player
-    camera.position.copy(new THREE.Vector3(0, 1,0).add(WORLD.playerMesh.position));
+    camera.position.copy(new THREE.Vector3(0, .85, 0)
+        .add(WORLD.playerMesh.position)
+        .sub(new THREE.Vector3().copy(lookDir).multiplyScalar(2.7)));
     camera.lookAt(new THREE.Vector3().add(camera.position).add(lookDir));
     camera.updateProjectionMatrix();
 
