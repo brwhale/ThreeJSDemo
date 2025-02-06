@@ -12,6 +12,7 @@ export function initWindow(lookDir: THREE.Vector3) {
     window.addEventListener('mousedown', event => {
         mouseDown = true;
     });
+
     window.addEventListener('mouseup', event => {
         mouseDown = false
     });  
@@ -28,7 +29,6 @@ export function initWindow(lookDir: THREE.Vector3) {
     });
 
     window.addEventListener('keydown', event => {
-        //console.log(event.key);
         keys[event.key.toLowerCase()] = true;
     });
     
