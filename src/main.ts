@@ -15,7 +15,7 @@ renderer.shadowMap.enabled = true;
 document.body.appendChild( renderer.domElement );
 const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
 const lookDir = new THREE.Vector3(0,0,1);
-let renderSize = {x: 0, y: 0};
+const renderSize = new THREE.Vector2(0, 0);
 
 // timing data
 const clock = new THREE.Clock();
@@ -50,7 +50,7 @@ function frameUpdate() {
 
     // handle resize
     if (renderSize.x != window.innerWidth || renderSize.y != window.innerHeight) {
-        renderSize = {x: window.innerWidth, y: window.innerHeight}
+        renderSize.set(window.innerWidth, window.innerHeight);
         camera.aspect = renderSize.x / renderSize.y;
         renderer.setSize( renderSize.x, renderSize.y );      
     }

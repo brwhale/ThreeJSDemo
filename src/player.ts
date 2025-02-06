@@ -9,7 +9,7 @@ let canJump = false;
 const jumpClock = new THREE.Clock();
 
 function flatten(dir: THREE.Vector3, up: THREE.Vector3) {
-	let side = new THREE.Vector3().copy(dir).cross(up);
+	const side = new THREE.Vector3().copy(dir).cross(up);
 	return new THREE.Vector3().copy(up).cross(side);
 }
 
@@ -25,17 +25,15 @@ export function update(lookDir: THREE.Vector3, timestep: number) {
     if (WINDOW.keys.w || WINDOW.keys.a || WINDOW.keys.s || WINDOW.keys.d) {        
         const side = new THREE.Vector3(0,1,0).cross(lookDir).normalize();
         const forward = new THREE.Vector3(0,1,0).cross(side).normalize();
-        let walkForce = (WINDOW.keys.shift ? 3.5 : 2.4);
-        let speedLimit = (WINDOW.keys.shift ? 15 : 10);       
-        let velocity = WORLD.player.getLinearVelocity();
-        let speed = flatten(new THREE.Vector3(velocity.x(), velocity.y(), velocity.z()),
-            new THREE.Vector3(0,1,0)).length();
+        const walkForce = (WINDOW.keys.shift ? 3.5 : 2.4);
+        const speedLimit = (WINDOW.keys.shift ? 15 : 10);
+        const speed = flatten(PHYS.fromBT(WORLD.player.getLinearVelocity()), new THREE.Vector3(0,1,0)).length();
         let speedMult = 0; 
         if (speed < speedLimit) {
             speedMult = timestep * Math.max(0, 16 * walkForce);
         }
         //console.log("current speed: ", speed);
-        let vec = new THREE.Vector3();
+        const vec = new THREE.Vector3();
         if (WINDOW.keys.w) {
             vec.add(forward.multiplyScalar(-1));
         }
@@ -54,8 +52,8 @@ export function update(lookDir: THREE.Vector3, timestep: number) {
 
         WORLD.player.applyCentralImpulse(moveVec);
     }
-    let playerPos = WORLD.player.getWorldTransform().getOrigin();
-    let playerJumpTestPoint = new PHYS.Ammo.btVector3(playerPos.x(), playerPos.y() - .7, playerPos.z());
+    const playerPos = WORLD.player.getWorldTransform().getOrigin();
+    const playerJumpTestPoint = new PHYS.Ammo.btVector3(playerPos.x(), playerPos.y() - .7, playerPos.z());
     canJump = jumpClock.getElapsedTime() > .35 && PHYS.castPhysicsRay(playerPos, playerJumpTestPoint);
     PHYS.Ammo.destroy(playerJumpTestPoint);
     if (canJump && WINDOW.keys[" "]) {

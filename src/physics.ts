@@ -14,6 +14,14 @@ let physicsWorld : LIBAMMO.default.btSoftRigidDynamicsWorld;
 
 const defaultFriction = 0.8;
 
+export function fromBT(vecin: LIBAMMO.default.btVector3) : THREE.Vector3 {
+    return new THREE.Vector3(vecin.x(), vecin.y(), vecin.z());
+}
+
+export function toBT(vecin: THREE.Vector3) : LIBAMMO.default.btVector3 {
+    return new Ammo.btVector3(vecin.x, vecin.y, vecin.z);
+}
+
 function initPhysicsInternal() {
     const gravityConstant = - 9.8;
     collisionConfiguration = new Ammo.btSoftBodyRigidBodyCollisionConfiguration();
@@ -22,19 +30,24 @@ function initPhysicsInternal() {
     solver = new Ammo.btSequentialImpulseConstraintSolver();
     softBodySolver = new Ammo.btDefaultSoftBodySolver();
     physicsWorld = new Ammo.btSoftRigidDynamicsWorld( dispatcher, broadphase, solver, collisionConfiguration, softBodySolver );
-    physicsWorld.setGravity( new Ammo.btVector3( 0, gravityConstant, 0 ) );
-    physicsWorld.getWorldInfo().set_m_gravity( new Ammo.btVector3( 0, gravityConstant, 0 ) );
+    const gravityVector = new Ammo.btVector3( 0, gravityConstant, 0 );
+    physicsWorld.setGravity( gravityVector );
+    physicsWorld.getWorldInfo().set_m_gravity( gravityVector );
+    Ammo.destroy(gravityVector);
 }
 
 function createRigidBody(threeObject : THREE.Object3D, physicsShape : LIBAMMO.default.btCollisionShape, mass: number) {
     const transform = new Ammo.btTransform();
     transform.setIdentity();
-    transform.setOrigin( new Ammo.btVector3( threeObject.position.x, threeObject.position.y, threeObject.position.z ) );
+    const position = toBT(threeObject.position);
+    transform.setOrigin( position );
+    Ammo.destroy(position);
     transform.setRotation( new Ammo.btQuaternion( threeObject.quaternion.x, threeObject.quaternion.y, threeObject.quaternion.z, threeObject.quaternion.w ) );
     const motionState = new Ammo.btDefaultMotionState( transform );
     const localInertia = new Ammo.btVector3( 0, 0, 0 );
     physicsShape.calculateLocalInertia( mass, localInertia );
     const rbInfo = new Ammo.btRigidBodyConstructionInfo( mass, motionState, physicsShape, localInertia );
+    Ammo.destroy(localInertia);
     const body = new Ammo.btRigidBody( rbInfo );
     body.setFriction(defaultFriction);
     threeObject.userData.physicsBody = body;
@@ -49,8 +62,8 @@ function createRigidBody(threeObject : THREE.Object3D, physicsShape : LIBAMMO.de
 
 function handleCollisonWithPlayer(object: THREE.Object3D) {
     if ((object.userData.collisionCooldown as THREE.Clock).getDelta() > .3) {
-        let child = object as THREE.Mesh;
-        let mat = child.material as THREE.MeshPhongMaterial
+        const child = object as THREE.Mesh;
+        const mat = child.material as THREE.MeshPhongMaterial
         if (mat) {
             mat.color = mat.color.addScalar(-.2);
         }
@@ -58,12 +71,12 @@ function handleCollisonWithPlayer(object: THREE.Object3D) {
 }
 
 function detectCollision(){
-	let dispatcher = physicsWorld.getDispatcher();
-	let numManifolds = dispatcher.getNumManifolds();
+	const dispatcher = physicsWorld.getDispatcher();
+	const numManifolds = dispatcher.getNumManifolds();
 
 	for ( let i = 0; i < numManifolds; i ++ ) {
-		let contactManifold = dispatcher.getManifoldByIndexInternal( i );
-		let numContacts = contactManifold.getNumContacts();
+		const contactManifold = dispatcher.getManifoldByIndexInternal( i );
+		const numContacts = contactManifold.getNumContacts();
         const rb0 = (Ammo as any).castObject( contactManifold.getBody0(), Ammo.btRigidBody ) as LIBAMMO.default.btRigidBody;
         const rb1 = (Ammo as any).castObject( contactManifold.getBody1(), Ammo.btRigidBody ) as LIBAMMO.default.btRigidBody;
 
@@ -71,19 +84,19 @@ function detectCollision(){
         let highestForce = 0;
 
 		for ( let j = 0; j < numContacts; j++ ) {
-			let contactPoint = contactManifold.getContactPoint( j );
-			let distance = contactPoint.getDistance();
-            let force = contactPoint.getAppliedImpulse();
-            closestDistance = Math.min(distance,closestDistance);
+			const contactPoint = contactManifold.getContactPoint( j );
+			const distance = contactPoint.getDistance();
+            const force = contactPoint.getAppliedImpulse();
+            closestDistance = Math.min(distance, closestDistance);
             highestForce = Math.max(force, highestForce);
 		}
 
         if (closestDistance < 0.1 && highestForce > 0.01 && (rb0.getMass() > 0 && rb1.getMass() > 0)) {
-            let obj1 = (rb0 as any).threeObject as THREE.Object3D;
-            let obj2 = (rb1 as any).threeObject as THREE.Object3D;
+            const obj1 = (rb0 as any).threeObject as THREE.Object3D;
+            const obj2 = (rb1 as any).threeObject as THREE.Object3D;
             if (obj1 === WORLD.playerMesh || obj2 === WORLD.playerMesh) {
                 //console.log({distance: distance, force: force, obj1:obj1, obj2:obj2});
-                let otherObj = obj1 === WORLD.playerMesh ? obj2 : obj1;
+                const otherObj = obj1 === WORLD.playerMesh ? obj2 : obj1;
                 handleCollisonWithPlayer(otherObj);
             }
         }
@@ -91,11 +104,11 @@ function detectCollision(){
 }
 
 export function castPhysicsRay(origin: LIBAMMO.default.btVector3, dest: LIBAMMO.default.btVector3) :boolean {
-    let rayCallBack = new Ammo.ClosestRayResultCallback(origin, dest);
+    const rayCallBack = new Ammo.ClosestRayResultCallback(origin, dest);
     
     physicsWorld.rayTest( rayCallBack.get_m_rayFromWorld(), rayCallBack.get_m_rayToWorld(), rayCallBack );
 
-    let result = rayCallBack.hasHit();
+    const result = rayCallBack.hasHit();
     Ammo.destroy(rayCallBack);
     return result
 }
@@ -109,8 +122,10 @@ export function makeBox(position: THREE.Vector3, size: THREE.Vector3, mass: numb
     cube.userData.collisionCooldown = new THREE.Clock();
     cube.userData.collisionCooldown.start();
     cube.position.copy(position);
-    const cubeShape = new Ammo.btBoxShape(new Ammo.btVector3(size.x,size.y,size.z).op_mul(.5));
+    const halfExtents = new Ammo.btVector3(size.x * .5,size.y * .5,size.z * .5);
+    const cubeShape = new Ammo.btBoxShape(halfExtents);
     createRigidBody(cube, cubeShape, mass);
+    Ammo.destroy(halfExtents);
     return cube;
 }
 
