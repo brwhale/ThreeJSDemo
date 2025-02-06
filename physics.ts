@@ -11,7 +11,6 @@ let softBodySolver;
 let physicsWorld : LIBAMMO.default.btSoftRigidDynamicsWorld;
 
 function initPhysicsInternal() {
-    // Physics configuration
     const gravityConstant = - 9.8;
     collisionConfiguration = new Ammo.btSoftBodyRigidBodyCollisionConfiguration();
     dispatcher = new Ammo.btCollisionDispatcher( collisionConfiguration );
@@ -60,11 +59,11 @@ export function stepSimulation(timestep: number) {
     physicsWorld.stepSimulation( timestep, 10 );
 }
 
-export function initPhysics(nextWork: Function) {
+export function initPhysics(nextInitCallback: Function) {
     LIBAMMO.default().then( function( AmmoLib ) {
         Ammo = AmmoLib;
 
         initPhysicsInternal();
-        nextWork();
+        nextInitCallback();
     } );
 }

@@ -9,7 +9,11 @@ export let player: LIBAMMO.default.btRigidBody;
 export let playerMesh: THREE.Object3D;
 const sun = new THREE.DirectionalLight( 0xffffff, 3 );
 
-function makeBox(position: THREE.Vector3, size: THREE.Vector3, mass: number, color: THREE.ColorRepresentation | undefined) {
+function makeBox(position: THREE.Vector3, 
+        size: THREE.Vector3, 
+        mass: number, 
+        color: THREE.ColorRepresentation | undefined
+    ) {
     let box = PHYS.makeBox(position, size, mass, color);
     if (mass > 0) {
         rigidBodies.push(box);

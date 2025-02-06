@@ -1,9 +1,9 @@
 import * as THREE from 'three';
 
-// input vars
 interface Dict<T> {
     [details: string]: T;
 }
+
 export const keys : Dict<boolean> = {w:false, a:false, s:false, d:false};
 const mousePos = new THREE.Vector2();
 let mouseDown = false;
