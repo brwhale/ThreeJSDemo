@@ -37,6 +37,15 @@ function updateObjects( timestep: number ) {
         }
     }
     Ammo.destroy(tempTransform);
+
+    // sun position
+    const sunRotSpeed = .1;
+    const sunPos = new THREE.Vector3(Math.sin(globalTime * sunRotSpeed), 0, Math.cos(globalTime * sunRotSpeed));
+    sunPos.multiplyScalar( 90 );
+    sunPos.y = 90;
+
+    WORLD.sun.position.copy(sunPos);
+    WORLD.sunObject.position.copy(sunPos);
 }
 
 function frameUpdate() {
@@ -65,10 +74,10 @@ function frameUpdate() {
 	renderer.render( WORLD.scene, camera );
 }
 
-function inititalize() {
+async function inititalize() {
     Ammo = PHYS.Ammo;
     WINDOW.initWindow(lookDir);
-    WORLD.createWorld();
+    await WORLD.createWorld();
     PLAYER.init();
     renderer.setAnimationLoop( frameUpdate );
 }

@@ -23,7 +23,7 @@ export function initWindow(lookDir: THREE.Vector3) {
             const scalar = 0.003; // not using timestep since the mouse will naturally travel further if bad fps
             const lookUpDown = newPos.y-mousePos.y;
             const polarness = new THREE.Vector3(0,1,0).dot(lookDir);
-            if (lookUpDown > 0 ? (polarness > -.9) : (polarness < .9)) {
+            if (lookUpDown > 0 ? (polarness > -.99) : (polarness < .99)) {
                 const side = new THREE.Vector3(0,1,0).cross(lookDir).normalize();
                 lookDir.applyAxisAngle(side, scalar * lookUpDown);
             }

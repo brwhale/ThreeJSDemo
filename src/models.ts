@@ -1,25 +1,35 @@
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { GLTF, GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+import * as WORLD from './world.js'
 
 const texLoader = new THREE.TextureLoader();
 const gltfLoader = new GLTFLoader();
 
-function loadModel(scene: THREE.Scene, modelPath: string, texturePath: string) {
+// blocking model load for simplicity
+function modelLoader(url: string) {
+    return new Promise((resolve, reject) => {
+        gltfLoader.load(url, data=> resolve(data), undefined, reject);
+    });
+  }
+
+export async function loadModel(postion: THREE.Vector3, scale: THREE.Vector3, modelPath: string, texturePath: string) : Promise<THREE.Object3D<THREE.Object3DEventMap> | undefined> {
     const texture = texLoader.load(texturePath);
     const textureMaterial = new THREE.MeshPhongMaterial({
         map: texture,
     });
+    let retVal: THREE.Object3D | undefined = undefined;
 
-    gltfLoader.load(modelPath , function ( gltf ) {
-        gltf.scene.traverse((obj) => {
-            if(obj instanceof THREE.Mesh){
-                obj.material = textureMaterial;
-                }
-            }
-        )
-        scene.add( gltf.scene );
-    }, undefined, function ( error ) {
-        console.error( error );
-    } );
+    const gltf = await modelLoader(modelPath) as GLTF;
+    gltf.scene.traverse((obj) => {
+        if(obj instanceof THREE.Mesh) {
+            obj.material = textureMaterial;
+            obj.position.copy(postion);
+            obj.scale.copy(scale);
+            retVal = obj;
+        }
+    });
+    WORLD.scene.add( gltf.scene );
+
+    return retVal;
 }
-//loadModel('Workbench.glb', 'DefaultBumpmap.png');
