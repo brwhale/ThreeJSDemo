@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import * as LIBAMMO from 'ammojs3'
 
+import * as WORLD from './world.js'
+
 export let Ammo : typeof LIBAMMO.default;
 
 let collisionConfiguration;
@@ -36,7 +38,7 @@ function createRigidBody(threeObject : THREE.Object3D, physicsShape : LIBAMMO.de
     const body = new Ammo.btRigidBody( rbInfo );
     body.setFriction(defaultFriction);
     threeObject.userData.physicsBody = body;
-
+    (body as any).threeObject = threeObject;
     if ( mass > 0 ) {
         // Disable deactivation
         body.setActivationState( 4 );
@@ -45,13 +47,43 @@ function createRigidBody(threeObject : THREE.Object3D, physicsShape : LIBAMMO.de
     physicsWorld.addRigidBody( body );
 }
 
+function detectCollision(){
+	let dispatcher = physicsWorld.getDispatcher();
+	let numManifolds = dispatcher.getNumManifolds();
+
+	for ( let i = 0; i < numManifolds; i ++ ) {
+		let contactManifold = dispatcher.getManifoldByIndexInternal( i );
+		let numContacts = contactManifold.getNumContacts();
+        const rb0 = (Ammo as any).castObject( contactManifold.getBody0(), Ammo.btRigidBody ) as LIBAMMO.default.btRigidBody;
+        const rb1 = (Ammo as any).castObject( contactManifold.getBody1(), Ammo.btRigidBody ) as LIBAMMO.default.btRigidBody;
+
+		for ( let j = 0; j < numContacts; j++ ) {
+			let contactPoint = contactManifold.getContactPoint( j );
+			let distance = contactPoint.getDistance();
+            let force = contactPoint.getAppliedImpulse();
+            if (distance < 0.01 && force > 0.01 && (rb0.getMass() > 0 && rb1.getMass() > 0)) {
+                let obj1 = (rb0 as any).threeObject as THREE.Object3D;
+                let obj2 = (rb1 as any).threeObject as THREE.Object3D;
+                if (obj1 === WORLD.playerMesh || obj2 === WORLD.playerMesh) {
+			        console.log({distance: distance, force: force, obj1:obj1, obj2:obj2});
+                    let otherObj = obj1 === WORLD.playerMesh ? obj2 : obj1;
+                    if ((otherObj.userData.collisionCooldown as THREE.Clock).getDelta() > .3) {
+                        let child = otherObj as THREE.Mesh;
+                        let mat = child.material as THREE.MeshPhongMaterial
+                        if (mat) {
+                            mat.color = mat.color.addScalar(-.2);
+                        }
+                    }
+                }
+            }
+		}
+	}
+}
+
 export function castPhysicsRay(origin: LIBAMMO.default.btVector3, dest: LIBAMMO.default.btVector3) {
-    // Returns true if ray hit,
-    // TODO Mask and group filters can be added to the test (rayCallBack.m_collisionFilterGroup and m_collisionFilterMask)
     let rayCallBack = new Ammo.ClosestRayResultCallback(new Ammo.btVector3(origin.x(), origin.y(), origin.z()),
          new Ammo.btVector3(dest.x(), dest.y(), dest.z()));
     
-    // Perform ray test
     physicsWorld.rayTest( rayCallBack.get_m_rayFromWorld(), rayCallBack.get_m_rayToWorld(), rayCallBack );
 
     return rayCallBack.hasHit();
@@ -63,6 +95,8 @@ export function makeBox(position: THREE.Vector3, size: THREE.Vector3, mass: numb
     const cube = new THREE.Mesh( geometry, material );
     cube.receiveShadow = true;
     cube.castShadow = true;
+    cube.userData.collisionCooldown = new THREE.Clock();
+    cube.userData.collisionCooldown.start();
     cube.position.copy(position);
     const cubeShape = new Ammo.btBoxShape(new Ammo.btVector3(size.x,size.y,size.z).op_mul(.5));
     createRigidBody(cube, cubeShape, mass);
@@ -71,6 +105,8 @@ export function makeBox(position: THREE.Vector3, size: THREE.Vector3, mass: numb
 
 export function stepSimulation(timestep: number) {
     physicsWorld.stepSimulation( timestep, 10 );
+
+    detectCollision();
 }
 
 export function initPhysics(nextInitCallback: Function) {
