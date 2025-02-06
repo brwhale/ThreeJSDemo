@@ -24,15 +24,22 @@ function makeBox(position: THREE.Vector3,
 
 function createObjects() {
     makeBox(new THREE.Vector3(0,-1,0), new THREE.Vector3(100, 1, 100), 0, "grey");
-
+    
     for (let i = -5; i < 5; ++i) {
         for (let j = -5; j < 5; ++j) {
-            makeBox(new THREE.Vector3(i*1.2,3,j*1.2), new THREE.Vector3(1, 1, 1), 4,
+            makeBox(new THREE.Vector3(i*1.2,10,j*1.2), new THREE.Vector3(1, 1, 1), 4,
+                new THREE.Color().setHSL(.5 + i * 0.1, .85 + j *.1, .5));
+        }
+    }
+    
+    for (let i = 0; i < 11; ++i) {
+        for (let j = -5; j < 5; ++j) {
+            makeBox(new THREE.Vector3(j*1.2, i,9), new THREE.Vector3(1.1, 1, 1.9), 4,
                 new THREE.Color().setHSL(.5 + i * 0.1, .85 + j *.1, .5));
         }
     }
 
-    playerMesh = makeBox(new THREE.Vector3(0, 3, -10), new THREE.Vector3(1,1,1), 4, "green");
+    playerMesh = makeBox(new THREE.Vector3(0, 0, -10), new THREE.Vector3(1,1,1), 4, "green");
     player = playerMesh.userData.physicsBody;
 
     sun.position.set( 100, 100, -50 );
