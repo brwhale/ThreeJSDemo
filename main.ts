@@ -1,4 +1,7 @@
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+import * as LIBAMMO from 'ammojs3'
 
 interface Dict<T> {
     [details: string]: T;
@@ -16,65 +19,177 @@ const mousePos = new THREE.Vector2();
 const lookDir = new THREE.Vector3(0,0,1);
 const clock = new THREE.Clock();
 document.body.appendChild( renderer.domElement );
+const texLoader = new THREE.TextureLoader();
+const gltfLoader = new GLTFLoader();
 
-const cubes : Array<THREE.Mesh>=[];
-for (let i = -5; i < 5; ++i) {
-    for (let j = -5; j < 5; ++j) {
-        const geometry = new THREE.BoxGeometry( 1, 1, 1 );
-        const material = new THREE.MeshBasicMaterial( {color: new THREE.Color().setHSL(.5 + i * 0.1, .85 + j *.1, .5)} );
-        const cube = new THREE.Mesh( geometry, material );
-        cube.position.x = i*1.2;
-        cube.position.z = j*1.2;
-        cube.position.y = 0;
-        scene.add( cube );
-        cubes.push(cube);
+let Ammo : typeof LIBAMMO.default;
+let collisionConfiguration;
+let dispatcher;
+let broadphase;
+let solver;
+let softBodySolver;
+let physicsWorld : LIBAMMO.default.btSoftRigidDynamicsWorld;
+
+function loadModel(modelPath: string, texturePath: string) {
+    const texture = texLoader.load(texturePath);
+    const textureMaterial = new THREE.MeshBasicMaterial({
+        map: texture,
+    });
+
+    gltfLoader.load(modelPath , function ( gltf ) {
+        gltf.scene.traverse((obj) => {
+            if(obj instanceof THREE.Mesh){
+                obj.material = textureMaterial;
+                }
+            }
+        )
+        scene.add( gltf.scene );
+    }, undefined, function ( error ) {
+        console.error( error );
+    } );
+}
+
+function initPhysics() {
+    // Physics configuration
+    const gravityConstant = - 9.8;
+    collisionConfiguration = new Ammo.btSoftBodyRigidBodyCollisionConfiguration();
+    dispatcher = new Ammo.btCollisionDispatcher( collisionConfiguration );
+    broadphase = new Ammo.btDbvtBroadphase();
+    solver = new Ammo.btSequentialImpulseConstraintSolver();
+    softBodySolver = new Ammo.btDefaultSoftBodySolver();
+    physicsWorld = new Ammo.btSoftRigidDynamicsWorld( dispatcher, broadphase, solver, collisionConfiguration, softBodySolver );
+    physicsWorld.setGravity( new Ammo.btVector3( 0, gravityConstant, 0 ) );
+    physicsWorld.getWorldInfo().set_m_gravity( new Ammo.btVector3( 0, gravityConstant, 0 ) );
+}
+
+function updatePhysics( timestep: number ) {
+    // Step world
+    physicsWorld.stepSimulation( timestep, 10 );
+
+    // Update rigid bodies
+    const tempTransform = new Ammo.btTransform();
+    for ( let i = 0, il = rigidBodies.length; i < il; i ++ ) {
+        const objThree = rigidBodies[ i ];
+        const objPhys = objThree.userData.physicsBody;
+        const ms = objPhys.getMotionState();
+        if ( ms ) {
+            ms.getWorldTransform( tempTransform );
+            const p = tempTransform.getOrigin();
+            const q = tempTransform.getRotation();
+            objThree.position.set( p.x(), p.y(), p.z() );
+            objThree.quaternion.set( q.x(), q.y(), q.z(), q.w() );
+
+        }
     }
 }
-let needsCamUpdate = false;
+
+//loadModel('Workbench.glb', 'DefaultBumpmap.png');
+const rigidBodies : Array<THREE.Object3D>=[];
+let player: LIBAMMO.default.btRigidBody;
+let playerMesh: THREE.Object3D;
+
+function createRigidBody(threeObject : THREE.Object3D, physicsShape : LIBAMMO.default.btCollisionShape, mass: number) {
+    const transform = new Ammo.btTransform();
+    transform.setIdentity();
+    transform.setOrigin( new Ammo.btVector3( threeObject.position.x, threeObject.position.y, threeObject.position.z ) );
+    transform.setRotation( new Ammo.btQuaternion( threeObject.quaternion.x, threeObject.quaternion.y, threeObject.quaternion.z, threeObject.quaternion.w ) );
+    const motionState = new Ammo.btDefaultMotionState( transform );
+
+    const localInertia = new Ammo.btVector3( 0, 0, 0 );
+    physicsShape.calculateLocalInertia( mass, localInertia );
+
+    const rbInfo = new Ammo.btRigidBodyConstructionInfo( mass, motionState, physicsShape, localInertia );
+    const body = new Ammo.btRigidBody( rbInfo );
+    body.setFriction(0.5);
+    threeObject.userData.physicsBody = body;
+
+    scene.add( threeObject );
+
+    if ( mass > 0 ) {
+        rigidBodies.push( threeObject );
+        // Disable deactivation
+        body.setActivationState( 4 );
+    }
+
+    physicsWorld.addRigidBody( body );
+}
+
+function createObjects() {
+    const floor = new THREE.Mesh(new THREE.BoxGeometry(100, 1, 100), new THREE.MeshBasicMaterial( { color: "grey"}));
+    floor.position.set(0,-1,0);
+    const floorShape = new Ammo.btBoxShape( new Ammo.btVector3(50,.5,50) );
+    createRigidBody(floor, floorShape, 0);
+
+    for (let i = -5; i < 5; ++i) {
+        for (let j = -5; j < 5; ++j) {
+            const geometry = new THREE.BoxGeometry( 1, 1, 1 );
+            const material = new THREE.MeshBasicMaterial( {color: new THREE.Color().setHSL(.5 + i * 0.1, .85 + j *.1, .5)} );
+            const cube = new THREE.Mesh( geometry, material );
+            cube.position.x = i*1.2;
+            cube.position.z = j*1.2;
+            cube.position.y = 3;
+            const cubeShape = new Ammo.btBoxShape(new Ammo.btVector3(.5,.5,.5));
+            createRigidBody(cube, cubeShape, 4);
+        }
+    }
+
+    playerMesh = new THREE.Mesh(new THREE.BoxGeometry(1,1,1), new THREE.MeshBasicMaterial({color: "green"}));
+    playerMesh.position.set(0, 3, -10);
+    const cubeShape = new Ammo.btBoxShape(new Ammo.btVector3(.5,.5,.5));
+    createRigidBody(playerMesh, cubeShape, 4);
+    player = playerMesh.userData.physicsBody;
+}
+
 function animate() {
     const timestep = clock.getDelta();
     globalTime += timestep;
+
     if (keys.w || keys.a || keys.s || keys.d) {        
         const forward = new THREE.Vector3(lookDir.x, lookDir.y, lookDir.z);
         const side = new THREE.Vector3(forward.x, forward.y, forward.z);
         side.cross(new THREE.Vector3(0,1,0)).normalize();
         forward.set(side.x, side.y, side.z);
         forward.cross(new THREE.Vector3(0,1,0)).normalize();
-        let speed = 1.0 * timestep;
+        let speed = 10 * (keys.shift ? 3.0 : 2.0) * timestep;
+        let vec = new THREE.Vector3();
         if (keys.w) {
-            camera.position.add(forward.multiplyScalar(-speed));
+            vec.add(forward.multiplyScalar(-speed));
         }
         if (keys.s) {
-            camera.position.add(forward.multiplyScalar(speed));
+            vec.add(forward.multiplyScalar(speed));
         }
         if (keys.a) {
-            camera.position.add(side.multiplyScalar(-speed));
+            vec.add(side.multiplyScalar(-speed));
         }
         if (keys.d) {
-            camera.position.add(side.multiplyScalar(speed));
+            vec.add(side.multiplyScalar(speed));
         }
-        needsCamUpdate = true;
+
+        player.applyCentralImpulse(new Ammo.btVector3( vec.x, vec.y, vec.z ));
     }
+
+    updatePhysics(timestep);
+
     if (renderSize.x != window.innerWidth || renderSize.y != window.innerHeight) {
         renderSize = {x: window.innerWidth, y: window.innerHeight}
         camera.aspect = renderSize.x / renderSize.y;
         renderer.setSize( renderSize.x, renderSize.y );      
-        needsCamUpdate = true;  
     }
-    if (needsCamUpdate) {        
-        camera.lookAt(new THREE.Vector3().add(camera.position).add(lookDir));
-        camera.updateProjectionMatrix();
-    }
-    cubes.forEach(cube => {
-        //cube.rotation.x = globalTime;
-        cube.rotation.y = Math.sin(globalTime * .1);
-        cube.position.y = 0.5 * Math.sin((cube.position.x + cube.position.z)* .1 + globalTime );
-    });
+    
+    camera.position.copy(new THREE.Vector3(0, 1,0).add(playerMesh.position));
+    camera.lookAt(new THREE.Vector3().add(camera.position).add(lookDir));
+    camera.updateProjectionMatrix();
 
 	renderer.render( scene, camera );
-    needsCamUpdate = false;
 }
-renderer.setAnimationLoop( animate );
+
+LIBAMMO.default().then( function( AmmoLib ) {
+	Ammo = AmmoLib;
+
+	initPhysics();
+    createObjects();
+	renderer.setAnimationLoop( animate );
+} );
 
 
 window.addEventListener('mousedown', event => {
@@ -91,15 +206,15 @@ window.addEventListener('mousemove', event => {
         const side = new THREE.Vector3(0,1,0).cross(lookDir).normalize();
         lookDir.applyAxisAngle(side, scalar * (newPos.y-mousePos.y));
         lookDir.applyAxisAngle(new THREE.Vector3(0,1,0), -scalar * (newPos.x-mousePos.x));
-        needsCamUpdate = true;
     }
     mousePos.set(newPos.x, newPos.y);
 });
 
-window.addEventListener('keydown',  event => {
-    keys[event.key] = true;
+window.addEventListener('keydown', event => {
+    //console.log(event.key);
+    keys[event.key.toLowerCase()] = true;
 });
   
 window.addEventListener('keyup',  event => {
-    keys[event.key] = false;
+    keys[event.key.toLowerCase()] = false;
 });
