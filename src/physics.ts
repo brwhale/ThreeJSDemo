@@ -95,7 +95,6 @@ function detectCollision(){
             const obj1 = (rb0 as any).threeObject as THREE.Object3D;
             const obj2 = (rb1 as any).threeObject as THREE.Object3D;
             if (obj1 === WORLD.playerMesh || obj2 === WORLD.playerMesh) {
-                //console.log({distance: distance, force: force, obj1:obj1, obj2:obj2});
                 const otherObj = obj1 === WORLD.playerMesh ? obj2 : obj1;
                 handleCollisonWithPlayer(otherObj);
             }
@@ -103,14 +102,21 @@ function detectCollision(){
 	}
 }
 
-export function castPhysicsRay(origin: LIBAMMO.default.btVector3, dest: LIBAMMO.default.btVector3) :boolean {
+export function castPhysicsRay(origin3: THREE.Vector3, dest3: THREE.Vector3) : THREE.Vector3 | undefined {
+    const origin = toBT(origin3);
+    const dest = toBT(dest3);
     const rayCallBack = new Ammo.ClosestRayResultCallback(origin, dest);
-    
     physicsWorld.rayTest( rayCallBack.get_m_rayFromWorld(), rayCallBack.get_m_rayToWorld(), rayCallBack );
-
     const result = rayCallBack.hasHit();
+    const position = fromBT(rayCallBack.get_m_hitPointWorld());
+    Ammo.destroy(origin);
     Ammo.destroy(rayCallBack);
-    return result
+    Ammo.destroy(dest);
+    if (result) {
+        return position;
+    } else {
+        return undefined
+    }
 }
 
 export function makeBox(position: THREE.Vector3, size: THREE.Vector3, mass: number, color: THREE.ColorRepresentation | undefined) {

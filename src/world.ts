@@ -6,13 +6,14 @@ import * as MODEL from './models.js'
 // object references
 export const scene = new THREE.Scene();
 export const rigidBodies : Array<THREE.Object3D>=[];
-export let player: LIBAMMO.default.btRigidBody;
+export let playerObject: LIBAMMO.default.btRigidBody;
 export let playerMesh: THREE.Object3D;
 export let sunObject: THREE.Object3D;
 export const sun = new THREE.SpotLight( 0xffffff, 3 );
 const sunAmbient = new THREE.AmbientLight( 0xffffff, .1);
+export const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
 
-function makeBox(position: THREE.Vector3, 
+export function makeBox(position: THREE.Vector3, 
         size: THREE.Vector3, 
         mass: number, 
         color: THREE.ColorRepresentation | undefined
@@ -54,7 +55,7 @@ async function createObjects() {
     }
 
     playerMesh = makeBox(new THREE.Vector3(0, 1, -10), new THREE.Vector3(1,1,1), 4, "green");
-    player = playerMesh.userData.physicsBody;
+    playerObject = playerMesh.userData.physicsBody;
 
     sun.position.set( 95, 95, -49 );
     sun.castShadow = true;

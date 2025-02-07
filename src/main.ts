@@ -13,9 +13,7 @@ let Ammo : typeof LIBAMMO.default;
 const renderer = new THREE.WebGLRenderer();
 renderer.shadowMap.enabled = true;
 document.body.appendChild( renderer.domElement );
-const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
 const lookDir = new THREE.Vector3(0,0,1);
-const renderSize = new THREE.Vector2(0, 0);
 
 // timing data
 const clock = new THREE.Clock();
@@ -52,27 +50,26 @@ function frameUpdate() {
     const timestep = clock.getDelta();
     globalTime += timestep;
 
+    updateObjects(timestep);
     WINDOW.update(timestep);
     PLAYER.update(lookDir, timestep);
-    PHYS.stepSimulation( timestep );
-
-    updateObjects(timestep);
+    PHYS.stepSimulation( timestep );    
 
     // handle resize
-    if (renderSize.x != window.innerWidth || renderSize.y != window.innerHeight) {
-        renderSize.set(window.innerWidth, window.innerHeight);
-        camera.aspect = renderSize.x / renderSize.y;
-        renderer.setSize( renderSize.x, renderSize.y );      
+    if (WINDOW.renderSize.x != window.innerWidth || WINDOW.renderSize.y != window.innerHeight) {
+        WINDOW.renderSize.set(window.innerWidth, window.innerHeight);
+        WORLD.camera.aspect = WINDOW.renderSize.x / WINDOW.renderSize.y;
+        renderer.setSize( WINDOW.renderSize.x, WINDOW.renderSize.y );      
     }
     
     // follow player
-    camera.position.copy(new THREE.Vector3(0, .85, 0)
+    WORLD.camera.position.copy(new THREE.Vector3(0, .85, 0)
         .add(WORLD.playerMesh.position)
         .sub(new THREE.Vector3().copy(lookDir).multiplyScalar(2.7)));
-    camera.lookAt(new THREE.Vector3().add(camera.position).add(lookDir));
-    camera.updateProjectionMatrix();
+        WORLD.camera.lookAt(new THREE.Vector3().add(WORLD.camera.position).add(lookDir));
+    WORLD.camera.updateProjectionMatrix();
 
-	renderer.render( WORLD.scene, camera );
+	renderer.render( WORLD.scene, WORLD.camera );
 }
 
 async function inititalize() {
