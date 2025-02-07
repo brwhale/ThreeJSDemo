@@ -52,6 +52,7 @@ function frameUpdate() {
     const timestep = clock.getDelta();
     globalTime += timestep;
 
+    WINDOW.update(timestep);
     PLAYER.update(lookDir, timestep);
     PHYS.stepSimulation( timestep );
 

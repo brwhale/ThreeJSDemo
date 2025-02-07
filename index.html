@@ -3,11 +3,30 @@
 	<head>
 		<meta charset="utf-8">
 		<title>ThreeJS Demo</title>
-		<style>
-			body { margin: 0; }
-		</style>
+		<link rel="stylesheet" href="demo.css" />
 	</head>
 	<body>
 		<script type="module" src="src/main.js"></script>
+
+		<div class="buttonArea">
+			<div class="buttonContainer" id="moveButtons">
+				<div class="singleButton buttonForward" control-id="w"></div>
+				<div class="singleButton buttonLeft" control-id="a"></div>
+				<div class="singleButton buttonBack" control-id="s"></div>
+				<div class="singleButton buttonRight" control-id="d"></div>
+			</div>
+
+			<div class="buttonContainer" id="lookButtons">
+				<div class="singleButton buttonForward" control-id="lw"></div>
+				<div class="singleButton buttonLeft" control-id="la"></div>
+				<div class="singleButton buttonBack" control-id="ls"></div>
+				<div class="singleButton buttonRight" control-id="ld"></div>
+			</div>
+
+			<div class="bottomContainer">
+				<div class="singleButton buttonSprint" control-id="shift"></div>
+				<div class="singleButton buttonJump" control-id=" "></div>
+			</div>
+		</div>
 	</body>
 </html>

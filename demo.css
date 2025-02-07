@@ -1,0 +1,101 @@
+html {
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+    -moz-user-select: -moz-none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+body { 
+	margin: 0; 
+	overflow: hidden;
+	user-select: none;
+}
+
+.buttonArea {
+	z-index: 100;
+	touch-action: none;
+	user-select: none;
+}
+
+.buttonContainer {
+	position: absolute;
+	bottom: 1em;
+	width: 40%;
+	aspect-ratio: 1;
+	height: auto;
+	text-align: center;	
+	display:block;	
+	background-color: rgb(46, 91, 60);	
+}
+
+.bottomContainer {
+	position: absolute;
+	bottom: 1em;
+	width: 20%;
+	left: 40%;
+	aspect-ratio: 1;
+	height: auto;
+	text-align: center;
+	z-index: 100;
+	display:block;
+	background-color: rgb(46, 91, 60);
+}
+
+#lookButtons {
+	right: 0em;
+}
+
+.singleButton {
+    width: 10em;
+    height: 10em;
+    background-color: brown;
+	position: absolute;
+	user-select: none;
+}
+
+.singleButton.buttonForward {
+	top: 0em;
+	left: 25%;
+}
+
+.singleButton.buttonLeft {
+	left: 0em;
+	top: 25%;
+}
+
+.singleButton.buttonBack {
+	left: 25%;
+	bottom: 0em;
+}
+
+.singleButton.buttonRight {
+	right: 0em;
+	top: 25%;
+}
+
+.singleButton.buttonSprint {
+	width: 50%;
+	height: 100%;
+	left: 0em;
+	background-color: black;
+}
+
+.singleButton.buttonJump {
+	width: 50%;
+	height: 100%;
+	right: 0em;
+	background-color: white;
+}
+
+@media (any-pointer: fine) {
+    .buttonArea {
+		display: none;
+	}
+}
+
+:root {
+	touch-action: pan-x pan-y;
+	height: 100% 
+}
