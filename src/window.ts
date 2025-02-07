@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { time } from 'three/tsl';
+import * as LIBAMMO from 'ammojs3'
 
 import * as PHYS from './physics.js'
 import * as WORLD from './world.js'
@@ -13,6 +13,7 @@ const mousePos = new THREE.Vector2();
 let mouseDown = false;
 let lookDir: THREE.Vector3;
 export const renderSize = new THREE.Vector2(0, 0);
+export let selectedObject: LIBAMMO.default.btRigidBody | undefined;
 
 function moveLook(x: number, y: number) {
     const scalar = 0.003; // not using timestep since the mouse will naturally travel further if bad fps
@@ -65,11 +66,23 @@ export function initWindow(lookD: THREE.Vector3) {
                 WORLD.makeBox(rayHit, new THREE.Vector3(2,2,2), 0, "green");
             }
         }
+        if (event.button == 2){            
+            const direction = getDirection(event.clientX, event.clientY);
+            const rayHit = PHYS.castPhysicsRayPicker(WORLD.camera.position, 
+                direction.multiplyScalar(200).add(WORLD.camera.position));
+            if (rayHit) {
+                console.log((rayHit as any).threeObject.position);
+                selectedObject = rayHit;
+            }
+        }
     });
 
     window.addEventListener('mouseup', event => {
         if (event.button == 1){
             mouseDown = false;
+        }
+        if (event.button == 2){
+            selectedObject = undefined;
         }
     });
 
@@ -77,6 +90,12 @@ export function initWindow(lookD: THREE.Vector3) {
         const newPos = new THREE.Vector2(event.clientX, event.clientY);
         if (mouseDown) {
             moveLook(newPos.x-mousePos.x, newPos.y-mousePos.y);
+        }
+        if (selectedObject) {
+            const objPos = (selectedObject as any).threeObject.position
+            const distance = WORLD.camera.position.distanceTo(objPos);
+            PHYS.setPosition(selectedObject, getDirection(event.clientX, event.clientY)
+                .multiplyScalar(distance).add(WORLD.camera.position));
         }
         mousePos.copy(newPos);
     });

@@ -19,9 +19,7 @@ export function makeBox(position: THREE.Vector3,
         color: THREE.ColorRepresentation | undefined
     ) {
     let box = PHYS.makeBox(position, size, mass, color);
-    if (mass > 0) {
-        rigidBodies.push(box);
-    }
+    rigidBodies.push(box);
     scene.add(box);
     return box;
 }

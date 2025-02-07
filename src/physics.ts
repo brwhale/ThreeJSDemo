@@ -22,6 +22,29 @@ export function toBT(vecin: THREE.Vector3) : LIBAMMO.default.btVector3 {
     return new Ammo.btVector3(vecin.x, vecin.y, vecin.z);
 }
 
+function getRigidBodyFromCollisionObject(body : LIBAMMO.default.btCollisionObject) : LIBAMMO.default.btRigidBody {
+    return (Ammo as any).castObject(body, Ammo.btRigidBody ) as LIBAMMO.default.btRigidBody;
+}
+
+export function setPosition(body : LIBAMMO.default.btRigidBody, position : THREE.Vector3) {
+    const tempTransform = new Ammo.btTransform();
+    const pos = toBT(position);
+    const ms = body.getMotionState();
+    // set both the regular transform and the motion state
+    body.getWorldTransform().setOrigin(pos);
+    if (ms) {
+        ms.getWorldTransform(tempTransform);
+        tempTransform.setOrigin(pos);
+        ms.setWorldTransform(tempTransform);
+    }
+    const stopvel = new Ammo.btVector3(0, 0, 0);
+    body.setLinearVelocity(stopvel);
+
+    Ammo.destroy(pos);
+    Ammo.destroy(stopvel);
+    Ammo.destroy(tempTransform);
+}
+
 function initPhysicsInternal() {
     const gravityConstant = - 9.8;
     collisionConfiguration = new Ammo.btSoftBodyRigidBodyCollisionConfiguration();
@@ -77,8 +100,8 @@ function detectCollision(){
 	for ( let i = 0; i < numManifolds; i ++ ) {
 		const contactManifold = dispatcher.getManifoldByIndexInternal( i );
 		const numContacts = contactManifold.getNumContacts();
-        const rb0 = (Ammo as any).castObject( contactManifold.getBody0(), Ammo.btRigidBody ) as LIBAMMO.default.btRigidBody;
-        const rb1 = (Ammo as any).castObject( contactManifold.getBody1(), Ammo.btRigidBody ) as LIBAMMO.default.btRigidBody;
+        const rb0 = getRigidBodyFromCollisionObject(contactManifold.getBody0());
+        const rb1 = getRigidBodyFromCollisionObject(contactManifold.getBody1());
 
         let closestDistance = 10000000.0;
         let highestForce = 0;
@@ -114,6 +137,23 @@ export function castPhysicsRay(origin3: THREE.Vector3, dest3: THREE.Vector3) : T
     Ammo.destroy(dest);
     if (result) {
         return position;
+    } else {
+        return undefined
+    }
+}
+
+export function castPhysicsRayPicker(origin3: THREE.Vector3, dest3: THREE.Vector3) : LIBAMMO.default.btRigidBody | undefined {
+    const origin = toBT(origin3);
+    const dest = toBT(dest3);
+    const rayCallBack = new Ammo.ClosestRayResultCallback(origin, dest);
+    physicsWorld.rayTest( rayCallBack.get_m_rayFromWorld(), rayCallBack.get_m_rayToWorld(), rayCallBack );
+    const result = rayCallBack.hasHit();
+    const hitObj = getRigidBodyFromCollisionObject(rayCallBack.get_m_collisionObject());
+    Ammo.destroy(origin);
+    Ammo.destroy(rayCallBack);
+    Ammo.destroy(dest);
+    if (result) {
+        return hitObj;
     } else {
         return undefined
     }
