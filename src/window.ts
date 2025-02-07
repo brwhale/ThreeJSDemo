@@ -44,12 +44,10 @@ export function update( timestamp: number) {
 }
 
 function getDirection(x: number, y: number) {
-    const dir = new THREE.Vector3((x / renderSize.x) * 2 - 1, (1.0 - y/ renderSize.y) * 2 - 1, 0);
-    dir.unproject(WORLD.camera);
-    dir.sub(WORLD.camera.position);
-    dir.normalize();
-    console.log({x:x, y:y, dirs:dir});
-    return dir;
+    return new THREE.Vector3((x / renderSize.x) * 2 - 1, (1.0 - y/ renderSize.y) * 2 - 1, 0)
+        .unproject(WORLD.camera)
+        .sub(WORLD.camera.position)
+        .normalize();
 }
 
 export function initWindow(lookD: THREE.Vector3) {
@@ -59,8 +57,7 @@ export function initWindow(lookD: THREE.Vector3) {
         if (event.button == 1){
             mouseDown = true;
         }
-        if (event.button == 0){
-            
+        if (event.button == 0){            
             const direction = getDirection(event.clientX, event.clientY);
             const rayHit = PHYS.castPhysicsRay(WORLD.camera.position, 
                 direction.multiplyScalar(200).add(WORLD.camera.position));
@@ -98,6 +95,7 @@ export function initWindow(lookD: THREE.Vector3) {
         if (id) {
             button.addEventListener('pointermove', (event) => {
                 keys[id] = true;
+                // this stops mobile browsers from redirecting inputs
                 if (event.target) {
                     (event.target as Element).releasePointerCapture((event as PointerEvent).pointerId);
                 }

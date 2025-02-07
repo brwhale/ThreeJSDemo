@@ -34,7 +34,8 @@ async function createObjects() {
     makeBox(new THREE.Vector3(0,50,-100), new THREE.Vector3(200, 100, 1), 0, "blue");
     makeBox(new THREE.Vector3(0,100,0), new THREE.Vector3(200, 1, 200), 0, "blue");
 
-    const sunObj = await MODEL.loadModel(new THREE.Vector3(95,95,-49), new THREE.Vector3(4, 4, 4), "out/sphere.glb", "out/yellow.png");
+    const sunObj = await MODEL.loadModel(new THREE.Vector3(95,95,-49), new THREE.Vector3(4, 4, 4), 
+        "out/sphere.glb", "out/yellow.png");
     if (sunObj) {
         sunObject = sunObj;
         ((sunObj as THREE.Mesh).material as THREE.MeshPhongMaterial).side = THREE.BackSide;        

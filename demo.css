@@ -1,4 +1,5 @@
 html {
+	/* block gestures */
     -webkit-touch-callout: none;
     -webkit-tap-highlight-color: transparent;
     -moz-user-select: -moz-none;
@@ -8,12 +9,14 @@ html {
 }
 
 body { 
+	/* block selection, scrolling */
 	margin: 0; 
 	overflow: hidden;
 	user-select: none;
 }
 
 .buttonArea {
+	/* block text selection, render on top of canvas */
 	z-index: 100;
 	touch-action: none;
 	user-select: none;
@@ -90,12 +93,14 @@ body {
 }
 
 @media (any-pointer: fine) {
+	/* disable mobile controls on desktop */
     .buttonArea {
 		display: none;
 	}
 }
 
 :root {
+	/* stops mobile from moving the canvas awkwardly */
 	touch-action: pan-x pan-y;
 	height: 100% 
 }
