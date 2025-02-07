@@ -175,6 +175,50 @@ export function makeBox(position: THREE.Vector3, size: THREE.Vector3, mass: numb
     return cube;
 }
 
+export function addPhysicsToMesh(
+    obj: THREE.Object3D, 
+    mass: number,
+) {
+    const mesh = obj as THREE.Mesh;
+    const size = obj.scale;
+    const g = mesh.geometry;
+    const indexes = g.getIndex();
+    const vert1 = new Ammo.btVector3();
+    const vert2 = new Ammo.btVector3();
+    const vert3 = new Ammo.btVector3();
+    if (indexes) {
+        const triangleMesh = new Ammo.btTriangleMesh();
+        const points = g.attributes.position;
+        for(let i=2;i<indexes.count;i+=3){
+            vert1.setValue(
+                points.getX(indexes.array[i]) * size.x,
+                points.getY(indexes.array[i]) * size.y,
+                points.getZ(indexes.array[i]) * size.z
+            );
+            vert2.setValue(
+                points.getX(indexes.array[i-1]) * size.x,
+                points.getY(indexes.array[i-1]) * size.y,
+                points.getZ(indexes.array[i-1]) * size.z
+            );
+            vert3.setValue(
+                points.getX(indexes.array[i-2]) * size.x,
+                points.getY(indexes.array[i-2]) * size.y,
+                points.getZ(indexes.array[i-2]) * size.z
+            );
+            triangleMesh.addTriangle(vert1, vert2, vert3);
+        }
+
+        const meshShape = new Ammo.btBvhTriangleMeshShape(triangleMesh, true);
+        createRigidBody(obj, meshShape, mass);
+    }
+    obj.castShadow = true;
+    obj.receiveShadow = true;
+    Ammo.destroy(vert1);
+    Ammo.destroy(vert2);
+    Ammo.destroy(vert3);
+}
+
+
 export function stepSimulation(timestep: number) {
     physicsWorld.stepSimulation( timestep, 10 );
 

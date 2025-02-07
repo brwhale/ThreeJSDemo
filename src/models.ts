@@ -17,12 +17,17 @@ export async function loadModel(postion: THREE.Vector3, scale: THREE.Vector3, mo
     const texture = texLoader.load(texturePath);
     const textureMaterial = new THREE.MeshPhongMaterial({
         map: texture,
-    });
-    let retVal: THREE.Object3D | undefined = undefined;
+    });    
+    // need to turn off Y flip to match blender textures
+    const colorMap = textureMaterial.map;
+    if (colorMap) {
+        colorMap.flipY = false;
+    }
 
+    let retVal: THREE.Object3D | undefined = undefined;
     const gltf = await modelLoader(modelPath) as GLTF;
     gltf.scene.traverse((obj) => {
-        if(obj instanceof THREE.Mesh) {
+        if (obj instanceof THREE.Mesh) {
             obj.material = textureMaterial;
             obj.position.copy(postion);
             obj.scale.copy(scale);

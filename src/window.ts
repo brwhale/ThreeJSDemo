@@ -3,6 +3,7 @@ import * as LIBAMMO from 'ammojs3'
 
 import * as PHYS from './physics.js'
 import * as WORLD from './world.js'
+import * as MODEL from './models.js'
 
 interface Dict<T> {
     [details: string]: T;
@@ -54,7 +55,7 @@ function getDirection(x: number, y: number) {
 export function initWindow(lookD: THREE.Vector3) {
     lookDir = lookD;
 
-    window.addEventListener('mousedown', event => {
+    window.addEventListener('mousedown', async event => {
         if (event.button == 1){
             mouseDown = true;
         }
@@ -63,7 +64,11 @@ export function initWindow(lookD: THREE.Vector3) {
             const rayHit = PHYS.castPhysicsRay(WORLD.camera.position, 
                 direction.multiplyScalar(200).add(WORLD.camera.position));
             if (rayHit) {
-                WORLD.makeBox(rayHit, new THREE.Vector3(2,2,2), 0, "green");
+                const shrub = await MODEL.loadModel(rayHit, new THREE.Vector3(.5, .5, .5), 
+                        "out/shrub.glb", "out/shrub.png");
+                if (shrub) {
+                    WORLD.addPhysicsToMesh(shrub, 0);
+                }
             }
         }
         if (event.button == 2){            
@@ -71,7 +76,6 @@ export function initWindow(lookD: THREE.Vector3) {
             const rayHit = PHYS.castPhysicsRayPicker(WORLD.camera.position, 
                 direction.multiplyScalar(200).add(WORLD.camera.position));
             if (rayHit) {
-                console.log((rayHit as any).threeObject.position);
                 selectedObject = rayHit;
             }
         }

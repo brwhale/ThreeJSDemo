@@ -24,6 +24,15 @@ export function makeBox(position: THREE.Vector3,
     return box;
 }
 
+export function addPhysicsToMesh(
+    mesh: THREE.Object3D, 
+    mass: number,
+) {
+    PHYS.addPhysicsToMesh(mesh, mass);
+    rigidBodies.push(mesh);
+    return mesh;
+}
+
 async function createObjects() {
     makeBox(new THREE.Vector3(0,0,0), new THREE.Vector3(200, 1, 200), 0, "grey");
     makeBox(new THREE.Vector3(100,50,0), new THREE.Vector3(1, 100, 200), 0, "blue");
@@ -37,6 +46,12 @@ async function createObjects() {
     if (sunObj) {
         sunObject = sunObj;
         ((sunObj as THREE.Mesh).material as THREE.MeshPhongMaterial).side = THREE.BackSide;        
+    }
+
+    const sunObj2 = await MODEL.loadModel(new THREE.Vector3(5,5,-4), new THREE.Vector3(4, 4, 4), 
+        "out/sphere.glb", "out/yellow.png");
+    if (sunObj2) {
+        addPhysicsToMesh(sunObj2, 0);
     }
     
     for (let i = -5; i < 5; ++i) {
