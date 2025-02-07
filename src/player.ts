@@ -26,6 +26,12 @@ function getRandomColor() {
     return new THREE.Color().setHSL(360*Math.random(), 0.5 + Math.random()/2, 0.5);
 }
 
+function getDistanceFromLine(lineStart: THREE.Vector3, lineEnd: THREE.Vector3, point: THREE.Vector3) : number {
+    const direction = new THREE.Vector3().copy(lineEnd).sub(lineStart);
+    const pointDirection = new THREE.Vector3().copy(point).sub(lineStart);
+    return pointDirection.cross(direction).length()/direction.length();
+}
+
 export function update(lookDir: THREE.Vector3, timestep: number) {
     if (WINDOW.keys.w || WINDOW.keys.a || WINDOW.keys.s || WINDOW.keys.d) {        
         const side = new THREE.Vector3(0,1,0).cross(lookDir).normalize();
@@ -37,7 +43,7 @@ export function update(lookDir: THREE.Vector3, timestep: number) {
         if (speed < speedLimit) {
             speedMult = timestep * Math.max(0, 16 * walkForce);
         }
-        //console.log("current speed: ", speed);
+
         const vec = new THREE.Vector3();
         if (WINDOW.keys.w) {
             vec.add(forward.multiplyScalar(-1));

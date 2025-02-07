@@ -132,7 +132,15 @@ export function initWindow(lookD: THREE.Vector3) {
         }
     });
 
+    // prevent browser effects
     document.addEventListener("contextmenu", function (e){
         e.preventDefault();
     }, false);
+
+    document.body.onmousedown = function(e) {
+        if(e.button == 1) {
+            e.preventDefault();
+            return false;
+        }
+    }
 }
