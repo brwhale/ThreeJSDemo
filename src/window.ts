@@ -11,7 +11,8 @@ interface Dict<T> {
 
 export const keys : Dict<boolean> = {w:false, a:false, s:false, d:false};
 const mousePos = new THREE.Vector2();
-let mouseDown = false;
+const mousePickOffset = new THREE.Vector2();
+let mouseLook = false;
 let lookDir: THREE.Vector3;
 export const renderSize = new THREE.Vector2(0, 0);
 export let selectedObject: LIBAMMO.default.btRigidBody | undefined;
@@ -55,12 +56,55 @@ function getDirection(x: number, y: number) {
 export function initWindow(lookD: THREE.Vector3) {
     lookDir = lookD;
 
-    window.addEventListener('mousedown', async event => {
-        if (event.button == 1){
-            mouseDown = true;
-        }
+    window.addEventListener('mousedown', event => {
         if (event.button == 0){            
             const direction = getDirection(event.clientX, event.clientY);
+            const rayHit = PHYS.castPhysicsRayPicker(WORLD.camera.position, 
+                direction.multiplyScalar(200).add(WORLD.camera.position));
+            if (rayHit) {
+                selectedObject = rayHit;
+                const screenCenter = new THREE.Vector3().copy(
+                    ((selectedObject as any).threeObject as THREE.Object3D).position)
+                    .project(WORLD.camera).multiplyScalar(.5).addScalar(.5)
+                    .multiply(new THREE.Vector3(renderSize.x, renderSize.y, 0))
+                mousePickOffset.set(event.clientX - screenCenter.x, event.clientY - (renderSize.y - screenCenter.y));
+            }
+        }
+    });
+
+    window.addEventListener('mouseup', event => {
+        if (event.button == 0){
+            selectedObject = undefined;
+        }
+    });
+
+    document.body.addEventListener('mousemove', event => {
+        const movement = new THREE.Vector2(event.movementX, event.movementY);
+        if (mouseLook) {
+            moveLook(movement.x, movement.y);
+        }
+        mousePos.set(event.clientX, event.clientY);
+        if (selectedObject) {
+            const objPos = (selectedObject as any).threeObject.position
+            const distance = WORLD.camera.position.distanceTo(objPos);
+            PHYS.setPosition(selectedObject, 
+                getDirection(event.clientX - mousePickOffset.x, event.clientY - mousePickOffset.y)
+                .multiplyScalar(distance).add(WORLD.camera.position));
+        }
+    });
+
+    window.addEventListener('keydown', async event => {
+        const lower = event.key.toLowerCase();
+        keys[lower] = true;
+        if (lower == 'q') {
+            mouseLook = !mouseLook;
+            if (mouseLook) {
+                document.body.requestPointerLock();
+            } else {
+                document.exitPointerLock();
+            }
+        } else if (lower == 'p') {
+            const direction = getDirection(mousePos.x, mousePos.y);
             const rayHit = PHYS.castPhysicsRay(WORLD.camera.position, 
                 direction.multiplyScalar(200).add(WORLD.camera.position));
             if (rayHit) {
@@ -71,41 +115,6 @@ export function initWindow(lookD: THREE.Vector3) {
                 }
             }
         }
-        if (event.button == 2){            
-            const direction = getDirection(event.clientX, event.clientY);
-            const rayHit = PHYS.castPhysicsRayPicker(WORLD.camera.position, 
-                direction.multiplyScalar(200).add(WORLD.camera.position));
-            if (rayHit) {
-                selectedObject = rayHit;
-            }
-        }
-    });
-
-    window.addEventListener('mouseup', event => {
-        if (event.button == 1){
-            mouseDown = false;
-        }
-        if (event.button == 2){
-            selectedObject = undefined;
-        }
-    });
-
-    window.addEventListener('mousemove', event => {
-        const newPos = new THREE.Vector2(event.clientX, event.clientY);
-        if (mouseDown) {
-            moveLook(newPos.x-mousePos.x, newPos.y-mousePos.y);
-        }
-        if (selectedObject) {
-            const objPos = (selectedObject as any).threeObject.position
-            const distance = WORLD.camera.position.distanceTo(objPos);
-            PHYS.setPosition(selectedObject, getDirection(event.clientX, event.clientY)
-                .multiplyScalar(distance).add(WORLD.camera.position));
-        }
-        mousePos.copy(newPos);
-    });
-
-    window.addEventListener('keydown', event => {
-        keys[event.key.toLowerCase()] = true;
     });
     
     window.addEventListener('keyup',  event => {
